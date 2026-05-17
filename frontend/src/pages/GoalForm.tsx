@@ -10,7 +10,7 @@ const GoalForm: React.FC = () => {
   const isEdit = !!id;
 
   const [thrustAreas, setThrustAreas] = useState([]);
-  const [cycles, setCycles] = useState([]);
+  const [cycles, setCycles] = useState<any[]>([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +35,7 @@ const GoalForm: React.FC = () => {
         ]);
         setThrustAreas(areasRes.data);
         setCycles([cyclesRes.data]);
-        
+
         if (!isEdit) {
           setFormData(prev => ({ ...prev, cycle_id: cyclesRes.data.id, thrust_area_id: areasRes.data[0]?.id || '' }));
         }
@@ -81,7 +81,7 @@ const GoalForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    
+
     try {
       const payload = {
         ...formData,
@@ -149,7 +149,7 @@ const GoalForm: React.FC = () => {
 
           <div className="p-5 bg-slate-800/30 rounded-xl border border-slate-700/50">
             <h4 className="font-semibold mb-4 text-indigo-300">Measurement & Targets</h4>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-group mb-0">
                 <label className="form-label">Unit of Measurement (UoM)</label>
