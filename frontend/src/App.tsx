@@ -21,7 +21,7 @@ const PrivateRoute = ({ children, roles }: { children: React.ReactNode, roles?: 
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/atomberg">
         <Routes>
           <Route path="/login" element={<Login />} />
           
