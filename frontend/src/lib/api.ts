@@ -24,7 +24,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/atomberg/login';
     } else if (error.response?.data?.error) {
       toast.error(error.response.data.error);
     } else {
