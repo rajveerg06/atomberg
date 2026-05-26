@@ -1,7 +1,7 @@
 # Python/Flask virtual environment
 backend/venv/
-backend/__pycache__/
-backend/*.pyc
+**/__pycache__/
+**/*.pyc
 
 # Next.js build and dependencies
 frontend/node_modules/

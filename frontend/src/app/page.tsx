@@ -6,11 +6,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { 
   Plus, 
   LogOut, 
-  CheckCircle, 
-  Clock, 
   User, 
   X, 
-  Filter,
   Check
 } from "lucide-react";
 
