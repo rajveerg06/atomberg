@@ -1,67 +1,113 @@
-# GoalTrack Enterprise Goal Management Portal
+# TaskFlow - Premium Task Management System
 
-A comprehensive web-based portal designed for enterprise-wide goal setting, approval, and tracking. Built to replace manual, fragmented goal-tracking workflows.
+TaskFlow is a premium, secure task management web application built with a modern decoupled architecture. It supports Google OAuth (via Supabase Auth), allows users to assign tasks, and sends real-time email notifications (using Gmail SMTP) upon task assignment and completion.
 
-## Features Included (Phases 1 & 2)
+---
 
-- **Goal Creation & Approval Workflow**: Employees create goals, Managers review and approve/reject them.
-- **Strict Validations**: Enforced 10% minimum weightage per goal, maximum 8 goals, and strict 100% total weightage before submission.
-- **Role-Based Access Control**: Separate views and functionalities for Employees, Managers, and Admins.
-- **Quarterly Check-ins**: Dedicated module for employees to input actual achievements against targets.
-- **System-Computed Progress**: Auto-calculation of progress scores based on UoM types (Numeric, %, Timeline, Zero-based).
-- **Premium Dynamic UI**: Modern glassmorphism UI with smooth animations, dark mode, and responsive layout.
-- **Rich Dashboard Analytics**: Recharts integration for visual progress tracking and completion stats.
-- **Audit Trails & Shared Goals**: Built-in backend support for detailed auditing and departmental KPI sharing.
+## System Architecture
 
-## Technology Stack
-
-- **Frontend**: React 18, TypeScript, Vite, Recharts, Tailwind-style custom CSS.
-- **Backend**: Node.js, Express, better-sqlite3 (SQLite database with WAL mode for production readiness).
-- **Authentication**: JWT-based stateless authentication.
-
-## How to Run the Application
-
-Since terminal commands cannot be run automatically in this environment, please open your terminal (PowerShell or Command Prompt) and run the provided startup script, or follow the manual steps below.
-
-### Option 1: Quick Start Script (Windows)
-
-Open PowerShell as Administrator (or in this directory) and run:
-```powershell
-.\start.ps1
+```mermaid
+graph TD
+    Client[Next.js + TypeScript Frontend] <-->|1. OAuth Login| SupabaseAuth[Supabase Auth / Google OAuth]
+    Client <-->|2. Fetch Data / Create Tasks| FlaskAPI[Flask Backend]
+    FlaskAPI <-->|3. DB Actions via Service Role| SupabaseDB[(Supabase PostgreSQL)]
+    FlaskAPI -->|4. Send Notifications| GmailSMTP[Gmail SMTP Service]
+    SupabaseAuth -->|5. Sync Users via DB Trigger| SupabaseDB
 ```
-This script will install all dependencies and start both the Backend (Port 5000) and Frontend (Port 5173).
 
-### Option 2: Manual Setup
+### Key Components
 
-1. **Install Root Dependencies**:
-   Open a terminal window in the root `Atomberg` folder and install the concurrent task runner:
+1. **Frontend (Next.js + TypeScript)**:
+   - Modern Next.js App Router project styled with a custom Vanilla CSS Glassmorphism design system.
+   - Leverages `@supabase/supabase-js` to handle secure Google OAuth 2.0 logins.
+   - Forwards Supabase Auth JWTs in the `Authorization: Bearer <JWT>` header to authenticate API calls made to the backend.
+   - Configures local rewrites in development and Vercel rewrites in production to proxy `/api/*` requests to the Flask server, mitigating CORS issues.
+
+2. **Backend (Flask)**:
+   - Lightweight Python 3.13 API that serves as the operations and notifications orchestration layer.
+   - Uses `PyJWT` to verify the incoming Supabase JWT tokens locally against the `SUPABASE_JWT_SECRET` (highly scalable, zero-network-overhead authentication).
+   - Executes database operations using the administrative `supabase-py` client (service role) to manage database tables directly.
+   - Integrates with Google's SMTP servers to send responsive HTML email notifications.
+
+3. **Database (Supabase PostgreSQL)**:
+   - Public schema containing `profiles` (synced automatically with Supabase's internal `auth.users` via database triggers) and `tasks` tables.
+   - Employs Row Level Security (RLS) policies to protect access.
+
+---
+
+## Database Schema & Migrations
+
+The SQL migrations are located under the `/migrations` folder:
+- **[01_profiles_schema.sql](file:///migrations/01_profiles_schema.sql)**: Sets up the `public.profiles` table, configures an automated database trigger function (`handle_new_user`) that listens for insertions to Supabase Auth (`auth.users`), and maps user profile metadata (names/avatars).
+- **[02_tasks_schema.sql](file:///migrations/02_tasks_schema.sql)**: Creates the `public.tasks` table storing task details, links constraints to profiles, sets up an `update_updated_at_column` trigger, and enforces RLS access control rules.
+
+---
+
+## Local Setup Instructions
+
+### 1. Database Setup
+1. Create a free project at [Supabase](https://supabase.com).
+2. Go to **Project Settings -> API** and copy:
+   - Project URL
+   - Anon Public Key
+   - Service Role JWT Secret (keep this secure!)
+   - JWT Secret
+3. Go to **Authentication -> Providers** and enable **Google**. Set up your client ID and client secret (refer to [Supabase Google Auth Docs](https://supabase.com/docs/guides/auth/social-login/auth-google)).
+4. Open the **SQL Editor** in Supabase and run the migration scripts in order:
+   - Run the content of `migrations/01_profiles_schema.sql`
+   - Run the content of `migrations/02_tasks_schema.sql`
+
+### 2. Backend Setup
+1. Navigate to `/backend` directory.
+2. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/Scripts/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Create a `.env` file from the template:
+   ```bash
+   cp .env.example .env
+   ```
+5. Populate variables inside `.env` (generate a Google Account App Password from Google Account Security settings for SMTP).
+6. Run the local Flask server:
+   ```bash
+   python app.py
+   ```
+   *The server runs on `http://127.0.0.1:5000`.*
+
+### 3. Frontend Setup
+1. Navigate to `/frontend` directory.
+2. Install npm packages:
    ```bash
    npm install
    ```
-
-2. **Start Both Servers Together**:
-   Run the following command from the root folder:
+3. Create a `.env.local` file from the template:
+   ```bash
+   cp .env.example .env.local
+   ```
+4. Populate `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+5. Run the dev server:
    ```bash
    npm run dev
    ```
-   *This will automatically start both the backend and frontend simultaneously in the same terminal window.*
+   *The client will be running on `http://localhost:3000`.*
 
-3. **Open Application**:
-   Navigate to `http://localhost:5173` in your browser.
+---
 
-## Demo Accounts
+## Production Deployment
 
-The database is pre-seeded with the following accounts (Password for all is `password123` or `admin123`/`manager123`/`emp123` as listed below):
+### 1. Database
+- Your database is hosted on Supabase (already cloud-hosted).
 
-- **Admin / HR**: `admin@atomberg.com` | Pass: `admin123`
-- **Manager (Engineering)**: `raj.patel@atomberg.com` | Pass: `manager123`
-- **Manager (Sales)**: `priya.singh@atomberg.com` | Pass: `manager123`
-- **Employee**: `arjun.kumar@atomberg.com` | Pass: `emp123`
+### 2. Backend (Render / Railway)
+- **Railway**: Connect your Git repository, select the `/backend` folder as the root directory, or deploy the `Dockerfile`. Add all environment variables from `backend/.env.example` to the Railway dashboard.
+- **Render**: Create a new **Web Service**, select Python environment, set build command to `pip install -r requirements.txt`, and start command to `gunicorn -w 4 -b 0.0.0.0:$PORT app:app`. Configure environment variables under the "Environment" tab.
 
-## Implementation Details
-
-- **Database**: The system uses `better-sqlite3` which creates a file at `backend/data/goaltrack.db`. The schema is fully normalized and includes extensive constraints to guarantee data integrity.
-- **Security**: Passwords are hashed using `bcryptjs`. API routes are protected by JWT tokens and role-based middleware.
-- **Design System**: A custom CSS design system `index.css` implements a stunning "Glassmorphism" dark theme with glowing accents, matching the requirement for visual excellence.
-
-Enjoy using GoalTrack!
+### 3. Frontend (Vercel)
+- Create a new project on Vercel, connect your Git repository, and specify the root directory as `frontend`.
+- Add variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to the project settings.
+- **CORS Handling**: Update the placeholder URL in `frontend/vercel.json` with the final URL of your live Flask backend. Deploy! Vercel will automatically route `/api/*` calls from the browser to the backend without CORS errors.
